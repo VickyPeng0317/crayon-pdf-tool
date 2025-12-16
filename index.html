@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>動感超人 PDF 變身總部</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Noto+Sans+TC:wght@700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* 動感超人經典配色 */
+            --ak-blue: #0066CC;   /* 戰服藍 */
+            --ak-red: #FF3333;    /* 手套紅 */
+            --ak-gold: #FFCC00;   /* 腰帶金 */
+            --ak-green: #33CC66;  /* 能量綠 */
+            --comic-black: #222;  /* 漫畫墨黑 */
+            --comic-white: #fff;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            background-color: #87CEEB;
+            /* 漫畫集中線背景 (Sunburst) */
+            background-image: 
+                repeating-conic-gradient(
+                    from 0deg,
+                    var(--comic-white) 0deg 15deg,
+                    #87CEEB 15deg 30deg
+                );
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 40px 20px;
+            overflow-x: hidden;
+        }
+
+        /* 主容器：像一本漫畫書 */
+        .comic-container {
+            background: var(--comic-white);
+            border: 6px solid var(--comic-black);
+            box-shadow: 15px 15px 0px rgba(0,0,0,0.8);
+            border-radius: 20px;
+            padding: 30px;
+            width: 100%;
+            max-width: 900px;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* 標題區：動感超人徽章風格 */
+        .header-section {
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .header-badge {
+            display: inline-block;
+            background: var(--ak-blue);
+            color: var(--ak-gold);
+            padding: 15px 40px;
+            border: 4px solid var(--comic-black);
+            transform: skew(-10deg) rotate(-2deg);
+            box-shadow: 5px 5px 0 var(--comic-black);
+        }
+
+        h1 {
+            font-family: 'Fredoka One', cursive; /* 圓胖字體 */
+            margin: 0;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 0 var(--ak-red);
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            margin-top: 15px;
+            font-weight: 900;
+            color: var(--ak-red);
+            background: var(--ak-gold);
+            display: inline-block;
+            padding: 5px 15px;
+            border: 3px solid var(--comic-black);
+            border-radius: 50px;
+            transform: rotate(2deg);
+        }
+
+        /* 上傳區：變身腰帶 */
+        .belt-upload-area {
+            background: var(--ak-red);
+            border: 5px solid var(--comic-black);
+            border-radius: 15px;
+            padding: 10px;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .belt-inner {
+            border: 3px dashed var(--ak-gold);
+            background: #fff;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .belt-inner:hover {
+            background: #FFF8DC;
+            transform: scale(0.98);
+        }
+
+        .belt-buckle {
+            width: 60px;
+            height: 60px;
+            background: var(--ak-gold);
+            border: 4px solid var(--comic-black);
+            border-radius: 50%;
+            margin: 0 auto 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            box-shadow: inset -5px -5px 0 rgba(0,0,0,0.2);
+        }
+        
+        .upload-text {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--comic-black);
+        }
+
+        #fileName {
+            margin-top: 10px;
+            color: var(--ak-blue);
+            font-weight: 900;
+        }
+
+        /* 按鈕：像街機的大按鈕 */
+        .action-btn {
+            background: var(--ak-blue);
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 900;
+            border: 4px solid var(--comic-black);
+            padding: 15px 30px;
+            border-radius: 50px;
+            cursor: pointer;
+            width: 100%;
+            box-shadow: 0 8px 0 var(--comic-black); /* 立體感 */
+            transition: all 0.1s;
+            position: relative;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        .action-btn:active:not(:disabled) {
+            transform: translateY(8px); /* 按下效果 */
+            box-shadow: 0 0 0 var(--comic-black);
+        }
+
+        .action-btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: translateY(8px);
+        }
+
+        /* 能量條 */
+        .power-meter {
+            height: 30px;
+            background: var(--comic-black);
+            border-radius: 15px;
+            margin: 20px 0;
+            padding: 4px;
+            display: none;
+        }
+        
+        .power-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--ak-green), var(--ak-gold), var(--ak-red));
+            width: 0%;
+            border-radius: 10px;
+            transition: width 0.3s;
+            position: relative;
+        }
+        /* 能量閃光 */
+        .power-fill::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(45deg, rgba(255,255,255,0.4) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0.4) 75%, transparent 75%, transparent);
+            background-size: 20px 20px;
+            animation: moveStripes 1s linear infinite;
+        }
+
+        @keyframes moveStripes {
+            0% { background-position: 0 0; }
+            100% { background-position: 40px 40px; }
+        }
+
+        /* 操作面板 */
+        .controls-panel {
+            background: var(--ak-blue);
+            padding: 15px;
+            border: 4px solid var(--comic-black);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            color: white;
+            box-shadow: 5px 5px 0 rgba(0,0,0,0.3);
+        }
+
+        .mini-btn {
+            border: 3px solid var(--comic-black);
+            border-radius: 8px;
+            padding: 8px 15px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 3px 3px 0 var(--comic-black);
+            transition: transform 0.2s;
+        }
+        .mini-btn:hover { transform: scale(1.05) rotate(-2deg); }
+        .mini-btn:active { transform: scale(0.95); box-shadow: 1px 1px 0 var(--comic-black); }
+        
+        .btn-yellow { background: var(--ak-gold); color: black; }
+        .btn-green { background: var(--ak-green); color: white; }
+        .btn-red { background: var(--ak-red); color: white; }
+
+        /* 卡片網格 */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 25px;
+        }
+
+        /* 動感卡片 */
+        .comic-card {
+            background: white;
+            border: 4px solid var(--comic-black);
+            padding: 10px 10px 40px 10px; /* 下方留白給拍立得效果 */
+            box-shadow: 8px 8px 0 rgba(0,0,0,0.2);
+            transition: transform 0.3s;
+            position: relative;
+            transform: rotate(-1deg);
+        }
+
+        .comic-card:nth-child(even) { transform: rotate(1deg); }
+        .comic-card:hover { transform: scale(1.05) rotate(0deg); z-index: 5; box-shadow: 12px 12px 0 rgba(0,0,0,0.3); }
+
+        .card-image-box {
+            border: 2px solid var(--comic-black);
+            overflow: hidden;
+            cursor: zoom-in;
+            background: #eee;
+        }
+        
+        .card-image-box img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .card-badge {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: var(--ak-red);
+            color: white;
+            border: 2px solid black;
+            padding: 3px 8px;
+            font-size: 12px;
+            font-weight: bold;
+            transform: skew(-10deg);
+        }
+
+        /* Checkbox */
+        .select-box {
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            width: 30px;
+            height: 30px;
+            background: white;
+            border: 3px solid black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .select-box input { display: none; }
+        .select-box::after { content: '★'; color: var(--ak-gold); font-size: 24px; display: none; -webkit-text-stroke: 1px black; }
+        .select-box.checked { background: var(--ak-blue); }
+        .select-box.checked::after { display: block; }
+
+        .single-dl-btn {
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            background: var(--ak-blue);
+            color: white;
+            border: 2px solid black;
+            font-weight: bold;
+            padding: 5px;
+            cursor: pointer;
+            border-radius: 20px;
+            opacity: 0;
+            transition: 0.2s;
+        }
+        .comic-card:hover .single-dl-btn { opacity: 1; bottom: 5px; }
+
+        /* Lightbox */
+        .lightbox {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 1000;
+            align-items: center; justify-content: center; flex-direction: column;
+        }
+        .lightbox img {
+            max-width: 90vw; max-height: 80vh; border: 5px solid white;
+            box-shadow: 0 0 30px var(--ak-gold);
+        }
+        .close-lb {
+            position: absolute; top: 20px; right: 20px;
+            background: var(--ak-red); color: white; border: 3px solid white;
+            width: 50px; height: 50px; border-radius: 50%;
+            font-size: 30px; text-align: center; line-height: 45px; cursor: pointer;
+        }
+        
+        .loading-text {
+            text-align: center; font-weight: bold; font-size: 1.2rem; margin-top: 10px; color: var(--ak-blue);
+        }
+        
+        /* RWD */
+        @media (max-width: 600px) {
+            .header-badge { padding: 10px 20px; }
+            h1 { font-size: 1.8rem; }
+            .controls-panel { justify-content: center; }
+            .mini-btn { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="comic-container">
+    
+    <div class="header-section">
+        <div class="header-badge">
+            <h1>⚡ 動感超人 PDF 變身器</h1>
+        </div>
+        <br>
+        <div class="subtitle">哇哈哈哈！把 PDF 變成動感卡片！</div>
+    </div>
+
+    <div class="belt-upload-area">
+        <label for="pdfInput" style="display: block;">
+            <div class="belt-inner" id="dropZone">
+                <div class="belt-buckle">A</div>
+                <div class="upload-text">點擊這裡放入機密文件 (PDF)</div>
+                <div id="fileName"></div>
+            </div>
+        </label>
+        <input type="file" id="pdfInput" accept="application/pdf" style="display: none;">
+    </div>
+
+    <button id="convertBtn" class="action-btn" disabled>動感光波！發射！ (請先選檔案)</button>
+
+    <div class="power-meter" id="powerMeter">
+        <div class="power-fill" id="powerFill"></div>
+    </div>
+    <div id="loadingText" class="loading-text" style="display:none;"></div>
+
+    <div id="resultArea" style="display: none; margin-top: 40px;">
+        <div class="controls-panel">
+            <span style="font-size: 1.2rem; font-weight: 900;">🔥 變身完成！共 <span id="countSpan">0</span> 張</span>
+            <div>
+                <button id="btnSelectAll" class="mini-btn btn-yellow">全選/取消</button>
+                <button id="btnDlSelected" class="mini-btn btn-green" disabled>下載選取的卡片</button>
+                <button id="btnDlAll" class="mini-btn btn-red">一鍵全部打包</button>
+            </div>
+        </div>
+
+        <div class="card-grid" id="cardGrid">
+            </div>
+    </div>
+</div>
+
+<div class="lightbox" id="lightbox">
+    <div class="close-lb" onclick="closeLightbox()">×</div>
+    <img id="lbImg" src="">
+    <h2 style="color: white; margin-top: 20px; text-shadow: 2px 2px 0 black;" id="lbText">PAGE 1</h2>
+</div>
+
+<script>
+    // 初始化 PDF.js Worker
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    const pdfInput = document.getElementById('pdfInput');
+    const fileNameDisplay = document.getElementById('fileName');
+    const convertBtn = document.getElementById('convertBtn');
+    const powerMeter = document.getElementById('powerMeter');
+    const powerFill = document.getElementById('powerFill');
+    const loadingText = document.getElementById('loadingText');
+    const resultArea = document.getElementById('resultArea');
+    const cardGrid = document.getElementById('cardGrid');
+    
+    // 按鈕群
+    const btnSelectAll = document.getElementById('btnSelectAll');
+    const btnDlSelected = document.getElementById('btnDlSelected');
+    const btnDlAll = document.getElementById('btnDlAll');
+
+    let selectedFile = null;
+    let imagesData = []; // 存 { id, blob, url, fileName, selected }
+
+    // 1. 檔案監聽
+    pdfInput.addEventListener('change', (e) => {
+        if (e.target.files[0]) {
+            selectedFile = e.target.files[0];
+            fileNameDisplay.textContent = `📜 ${selectedFile.name}`;
+            convertBtn.disabled = false;
+            convertBtn.textContent = "動感光波！發射！ (開始轉換)";
+            // 重置 UI
+            resultArea.style.display = 'none';
+            cardGrid.innerHTML = '';
+            imagesData = [];
+        }
+    });
+
+    // 拖曳支援
+    const dropZone = document.getElementById('dropZone');
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.style.background = '#FFF8DC';
+    });
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropZone.style.background = '#fff';
+    });
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.background = '#fff';
+        if (e.dataTransfer.files[0] && e.dataTransfer.files[0].type === "application/pdf") {
+            pdfInput.files = e.dataTransfer.files;
+            // 手動觸發 change 事件
+            const event = new Event('change');
+            pdfInput.dispatchEvent(event);
+        }
+    });
+
+    // 2. 轉換邏輯
+    convertBtn.addEventListener('click', async () => {
+        if (!selectedFile) return;
+
+        convertBtn.disabled = true;
+        convertBtn.textContent = "⚡ 能量填充中... ⚡";
+        powerMeter.style.display = 'block';
+        loadingText.style.display = 'block';
+        resultArea.style.display = 'none';
+
+        try {
+            const buffer = await selectedFile.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument(buffer).promise;
+            const total = pdf.numPages;
+
+            for (let i = 1; i <= total; i++) {
+                // 更新進度條
+                const percent = Math.round((i / total) * 100);
+                powerFill.style.width = `${percent}%`;
+                loadingText.textContent = `正在發射第 ${i} 波光波... (${i}/${total})`;
+
+                const page = await pdf.getPage(i);
+                const scale = 2; // 高畫質
+                const viewport = page.getViewport({ scale: scale });
+                
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+
+                await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+
+                const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+                const url = URL.createObjectURL(blob);
+                
+                imagesData.push({
+                    id: i,
+                    blob: blob,
+                    url: url,
+                    fileName: `action_kamen_page_${i}.png`,
+                    selected: false
+                });
+            }
+
+            loadingText.textContent = "變身完成！哇哈哈哈！";
+            setTimeout(() => {
+                powerMeter.style.display = 'none';
+                loadingText.style.display = 'none';
+                renderCards();
+                convertBtn.textContent = "再次發射動感光波";
+                convertBtn.disabled = false;
+            }, 800);
+
+        } catch (err) {
+            alert("哎呀！怪獸太強了 (轉換失敗)：" + err.message);
+            convertBtn.disabled = false;
+        }
+    });
+
+    // 3. 渲染卡片
+    function renderCards() {
+        resultArea.style.display = 'block';
+        document.getElementById('countSpan').textContent = imagesData.length;
+        cardGrid.innerHTML = '';
+
+        imagesData.forEach((img, index) => {
+            const div = document.createElement('div');
+            div.className = 'comic-card';
+            div.innerHTML = `
+                <div class="select-box" onclick="toggleSelect(${index}, this)"></div>
+                <div class="card-image-box" onclick="openLightbox(${index})">
+                    <img src="${img.url}">
+                </div>
+                <div class="card-badge">P.${img.id}</div>
+                <button class="single-dl-btn" onclick="downloadSingle(${index})">下載這張</button>
+            `;
+            cardGrid.appendChild(div);
+        });
+        updateBtnState();
+    }
+
+    // 4. 互動功能
+    window.toggleSelect = (index, el) => {
+        imagesData[index].selected = !imagesData[index].selected;
+        el.classList.toggle('checked');
+        updateBtnState();
+    };
+
+    function updateBtnState() {
+        const count = imagesData.filter(i => i.selected).length;
+        btnDlSelected.disabled = count === 0;
+        btnDlSelected.textContent = count > 0 ? `下載選取的 ${count} 張` : "下載選取的卡片";
+    }
+
+    // 全選
+    let isAll = false;
+    btnSelectAll.addEventListener('click', () => {
+        isAll = !isAll;
+        const boxes = document.querySelectorAll('.select-box');
+        imagesData.forEach((img, idx) => {
+            img.selected = isAll;
+            if(isAll) boxes[idx].classList.add('checked');
+            else boxes[idx].classList.remove('checked');
+        });
+        updateBtnState();
+    });
+
+    // 單張下載
+    window.downloadSingle = (index) => {
+        const a = document.createElement('a');
+        a.href = imagesData[index].url;
+        a.download = imagesData[index].fileName;
+        a.click();
+    };
+
+    // 批次下載
+    async function downloadZip(targetImages, zipName) {
+        const zip = new JSZip();
+        targetImages.forEach(img => {
+            zip.file(img.fileName, img.blob);
+        });
+        const content = await zip.generateAsync({type:"blob"});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(content);
+        a.download = zipName;
+        a.click();
+    }
+
+    btnDlAll.addEventListener('click', () => {
+        downloadZip(imagesData, `動感超人全集_${Date.now()}.zip`);
+    });
+
+    btnDlSelected.addEventListener('click', () => {
+        const targets = imagesData.filter(i => i.selected);
+        downloadZip(targets, `動感超人精選_${Date.now()}.zip`);
+    });
+
+    // Lightbox
+    window.openLightbox = (index) => {
+        document.getElementById('lbImg').src = imagesData[index].url;
+        document.getElementById('lbText').textContent = `PAGE ${imagesData[index].id}`;
+        document.getElementById('lightbox').style.display = 'flex';
+    };
+    window.closeLightbox = () => {
+        document.getElementById('lightbox').style.display = 'none';
+    };
+</script>
+
+</body>
+</html>
