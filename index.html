@@ -3,359 +3,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>動感超人 PDF 變身總部</title>
+    <title>動感超人 PDF 變身總部 (終極版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.min.js"></script>
+
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Noto+Sans+TC:wght@700;900&display=swap" rel="stylesheet">
     
     <style>
+        /* --- 動感超人風格 CSS (沿用並微調) --- */
         :root {
-            /* 動感超人經典配色 */
-            --ak-blue: #0066CC;   /* 戰服藍 */
-            --ak-red: #FF3333;    /* 手套紅 */
-            --ak-gold: #FFCC00;   /* 腰帶金 */
-            --ak-green: #33CC66;  /* 能量綠 */
-            --comic-black: #222;  /* 漫畫墨黑 */
-            --comic-white: #fff;
+            --ak-blue: #0066CC; --ak-red: #FF3333; --ak-gold: #FFCC00;
+            --ak-green: #33CC66; --ak-purple: #8E44AD; /* 新增動感紫 */
+            --comic-black: #222; --comic-white: #fff;
         }
 
         body {
-            font-family: 'Noto Sans TC', sans-serif;
-            margin: 0;
-            min-height: 100vh;
+            font-family: 'Noto Sans TC', sans-serif; margin: 0; min-height: 100vh;
             background-color: #87CEEB;
-            /* 漫畫集中線背景 (Sunburst) */
-            background-image: 
-                repeating-conic-gradient(
-                    from 0deg,
-                    var(--comic-white) 0deg 15deg,
-                    #87CEEB 15deg 30deg
-                );
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            padding: 40px 20px;
-            overflow-x: hidden;
+            background-image: repeating-conic-gradient(from 0deg, var(--comic-white) 0deg 15deg, #87CEEB 15deg 30deg);
+            display: flex; justify-content: center; align-items: flex-start; padding: 40px 20px; overflow-x: hidden;
         }
 
-        /* 主容器：像一本漫畫書 */
         .comic-container {
-            background: var(--comic-white);
-            border: 6px solid var(--comic-black);
-            box-shadow: 15px 15px 0px rgba(0,0,0,0.8);
-            border-radius: 20px;
-            padding: 30px;
-            width: 100%;
-            max-width: 900px;
-            position: relative;
-            z-index: 10;
+            background: var(--comic-white); border: 6px solid var(--comic-black);
+            box-shadow: 15px 15px 0px rgba(0,0,0,0.8); border-radius: 20px;
+            padding: 30px; width: 100%; max-width: 900px; position: relative; z-index: 10;
         }
 
-        /* 標題區：動感超人徽章風格 */
-        .header-section {
-            text-align: center;
-            margin-bottom: 30px;
-            position: relative;
-        }
-
+        .header-section { text-align: center; margin-bottom: 30px; position: relative; }
         .header-badge {
-            display: inline-block;
-            background: var(--ak-blue);
-            color: var(--ak-gold);
-            padding: 15px 40px;
-            border: 4px solid var(--comic-black);
-            transform: skew(-10deg) rotate(-2deg);
-            box-shadow: 5px 5px 0 var(--comic-black);
+            display: inline-block; background: var(--ak-blue); color: var(--ak-gold);
+            padding: 15px 40px; border: 4px solid var(--comic-black);
+            transform: skew(-10deg) rotate(-2deg); box-shadow: 5px 5px 0 var(--comic-black);
         }
+        h1 { font-family: 'Fredoka One', cursive; margin: 0; font-size: 2.5rem; text-shadow: 2px 2px 0 var(--ak-red); letter-spacing: 2px; }
+        .subtitle { margin-top: 15px; font-weight: 900; color: var(--ak-red); background: var(--ak-gold); display: inline-block; padding: 5px 15px; border: 3px solid var(--comic-black); border-radius: 50px; transform: rotate(2deg); }
 
-        h1 {
-            font-family: 'Fredoka One', cursive; /* 圓胖字體 */
-            margin: 0;
-            font-size: 2.5rem;
-            text-shadow: 2px 2px 0 var(--ak-red);
-            letter-spacing: 2px;
-        }
+        /* 上傳區 */
+        .belt-upload-area { background: var(--ak-red); border: 5px solid var(--comic-black); border-radius: 15px; padding: 10px; margin: 20px 0; position: relative; }
+        .belt-inner { border: 3px dashed var(--ak-gold); background: #fff; border-radius: 10px; padding: 40px; text-align: center; cursor: pointer; transition: all 0.3s; }
+        .belt-inner:hover { background: #FFF8DC; transform: scale(0.98); }
+        .belt-buckle { width: 60px; height: 60px; background: var(--ak-gold); border: 4px solid var(--comic-black); border-radius: 50%; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-size: 30px; box-shadow: inset -5px -5px 0 rgba(0,0,0,0.2); }
+        .upload-text { font-size: 1.2rem; font-weight: bold; color: var(--comic-black); }
+        #fileName { margin-top: 10px; color: var(--ak-blue); font-weight: 900; }
 
-        .subtitle {
-            margin-top: 15px;
-            font-weight: 900;
-            color: var(--ak-red);
-            background: var(--ak-gold);
-            display: inline-block;
-            padding: 5px 15px;
-            border: 3px solid var(--comic-black);
-            border-radius: 50px;
-            transform: rotate(2deg);
-        }
-
-        /* 上傳區：變身腰帶 */
-        .belt-upload-area {
-            background: var(--ak-red);
-            border: 5px solid var(--comic-black);
-            border-radius: 15px;
-            padding: 10px;
-            margin: 20px 0;
-            position: relative;
-        }
-
-        .belt-inner {
-            border: 3px dashed var(--ak-gold);
-            background: #fff;
-            border-radius: 10px;
-            padding: 40px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .belt-inner:hover {
-            background: #FFF8DC;
-            transform: scale(0.98);
-        }
-
-        .belt-buckle {
-            width: 60px;
-            height: 60px;
-            background: var(--ak-gold);
-            border: 4px solid var(--comic-black);
-            border-radius: 50%;
-            margin: 0 auto 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 30px;
-            box-shadow: inset -5px -5px 0 rgba(0,0,0,0.2);
-        }
-        
-        .upload-text {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: var(--comic-black);
-        }
-
-        #fileName {
-            margin-top: 10px;
-            color: var(--ak-blue);
-            font-weight: 900;
-        }
-
-        /* 按鈕：像街機的大按鈕 */
+        /* 主操作按鈕 */
         .action-btn {
-            background: var(--ak-blue);
-            color: white;
-            font-size: 1.5rem;
-            font-weight: 900;
-            border: 4px solid var(--comic-black);
-            padding: 15px 30px;
-            border-radius: 50px;
-            cursor: pointer;
-            width: 100%;
-            box-shadow: 0 8px 0 var(--comic-black); /* 立體感 */
-            transition: all 0.1s;
-            position: relative;
-            overflow: hidden;
-            margin-top: 20px;
+            background: var(--ak-blue); color: white; font-size: 1.5rem; font-weight: 900;
+            border: 4px solid var(--comic-black); padding: 15px 30px; border-radius: 50px;
+            cursor: pointer; width: 100%; box-shadow: 0 8px 0 var(--comic-black);
+            transition: all 0.1s; position: relative; overflow: hidden; margin-top: 20px;
         }
-
-        .action-btn:active:not(:disabled) {
-            transform: translateY(8px); /* 按下效果 */
-            box-shadow: 0 0 0 var(--comic-black);
-        }
-
-        .action-btn:disabled {
-            background: #95a5a6;
-            cursor: not-allowed;
-            box-shadow: none;
-            transform: translateY(8px);
-        }
+        .action-btn:active:not(:disabled) { transform: translateY(8px); box-shadow: 0 0 0 var(--comic-black); }
+        .action-btn:disabled { background: #95a5a6; cursor: not-allowed; box-shadow: none; transform: translateY(8px); }
 
         /* 能量條 */
-        .power-meter {
-            height: 30px;
-            background: var(--comic-black);
-            border-radius: 15px;
-            margin: 20px 0;
-            padding: 4px;
-            display: none;
-        }
-        
+        .power-meter { height: 30px; background: var(--comic-black); border-radius: 15px; margin: 20px 0; padding: 4px; display: none; }
         .power-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--ak-green), var(--ak-gold), var(--ak-red));
-            width: 0%;
-            border-radius: 10px;
-            transition: width 0.3s;
-            position: relative;
+            height: 100%; background: linear-gradient(90deg, var(--ak-green), var(--ak-gold), var(--ak-red));
+            width: 0%; border-radius: 10px; transition: width 0.3s; position: relative;
         }
-        /* 能量閃光 */
         .power-fill::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
             background: linear-gradient(45deg, rgba(255,255,255,0.4) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0.4) 75%, transparent 75%, transparent);
-            background-size: 20px 20px;
-            animation: moveStripes 1s linear infinite;
+            background-size: 20px 20px; animation: moveStripes 1s linear infinite;
         }
+        @keyframes moveStripes { 0% { background-position: 0 0; } 100% { background-position: 40px 40px; } }
+        .loading-text { text-align: center; font-weight: bold; font-size: 1.2rem; margin-top: 10px; color: var(--ak-blue); }
 
-        @keyframes moveStripes {
-            0% { background-position: 0 0; }
-            100% { background-position: 40px 40px; }
-        }
-
-        /* 操作面板 */
+        /* 操作面板 (結果區) - 修改版 */
         .controls-panel {
-            background: var(--ak-blue);
-            padding: 15px;
-            border: 4px solid var(--comic-black);
-            border-radius: 12px;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-            color: white;
+            background: var(--ak-blue); padding: 20px; border: 4px solid var(--comic-black);
+            border-radius: 12px; margin-bottom: 30px; color: white;
             box-shadow: 5px 5px 0 rgba(0,0,0,0.3);
         }
-
-        .mini-btn {
-            border: 3px solid var(--comic-black);
-            border-radius: 8px;
-            padding: 8px 15px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 3px 3px 0 var(--comic-black);
-            transition: transform 0.2s;
+        .controls-header {
+            font-size: 1.3rem; font-weight: 900; margin-bottom: 15px; text-align: center;
+            text-shadow: 2px 2px 0 var(--comic-black);
         }
-        .mini-btn:hover { transform: scale(1.05) rotate(-2deg); }
-        .mini-btn:active { transform: scale(0.95); box-shadow: 1px 1px 0 var(--comic-black); }
+        .download-groups {
+            display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;
+        }
+        .dl-group {
+            background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; border: 2px solid var(--comic-black);
+            display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 250px;
+        }
+        .dl-group-title { font-weight: bold; text-align: center; margin-bottom: 5px; color: var(--ak-gold); text-shadow: 1px 1px 0 black;}
+
+        /* 小按鈕樣式 */
+        .mini-btn {
+            border: 3px solid var(--comic-black); border-radius: 8px; padding: 10px 15px;
+            font-weight: bold; cursor: pointer; box-shadow: 3px 3px 0 var(--comic-black);
+            transition: transform 0.2s; width: 100%; font-size: 1rem;
+        }
+        .mini-btn:hover:not(:disabled) { transform: scale(1.02) rotate(-1deg); }
+        .mini-btn:active:not(:disabled) { transform: scale(0.98); box-shadow: 1px 1px 0 var(--comic-black); }
+        .mini-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         
         .btn-yellow { background: var(--ak-gold); color: black; }
         .btn-green { background: var(--ak-green); color: white; }
         .btn-red { background: var(--ak-red); color: white; }
+        .btn-purple { background: var(--ak-purple); color: white; } /* PPT 專用色 */
 
         /* 卡片網格 */
-        .card-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 25px;
-        }
-
-        /* 動感卡片 */
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 25px; }
         .comic-card {
-            background: white;
-            border: 4px solid var(--comic-black);
-            padding: 10px 10px 40px 10px; /* 下方留白給拍立得效果 */
-            box-shadow: 8px 8px 0 rgba(0,0,0,0.2);
-            transition: transform 0.3s;
-            position: relative;
-            transform: rotate(-1deg);
+            background: white; border: 4px solid var(--comic-black);
+            padding: 10px 10px 40px 10px; box-shadow: 8px 8px 0 rgba(0,0,0,0.2);
+            transition: transform 0.3s; position: relative; transform: rotate(-1deg);
         }
-
         .comic-card:nth-child(even) { transform: rotate(1deg); }
         .comic-card:hover { transform: scale(1.05) rotate(0deg); z-index: 5; box-shadow: 12px 12px 0 rgba(0,0,0,0.3); }
-
-        .card-image-box {
-            border: 2px solid var(--comic-black);
-            overflow: hidden;
-            cursor: zoom-in;
-            background: #eee;
-        }
-        
-        .card-image-box img {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
-
+        .card-image-box { border: 2px solid var(--comic-black); overflow: hidden; cursor: zoom-in; background: #eee; }
+        .card-image-box img { width: 100%; height: auto; display: block; }
         .card-badge {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            background: var(--ak-red);
-            color: white;
-            border: 2px solid black;
-            padding: 3px 8px;
-            font-size: 12px;
-            font-weight: bold;
-            transform: skew(-10deg);
+            position: absolute; bottom: 10px; right: 10px; background: var(--ak-red);
+            color: white; border: 2px solid black; padding: 3px 8px; font-size: 12px; font-weight: bold; transform: skew(-10deg);
         }
 
-        /* Checkbox */
+        /* Select Box */
         .select-box {
-            position: absolute;
-            top: -10px;
-            left: -10px;
-            width: 30px;
-            height: 30px;
-            background: white;
-            border: 3px solid black;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 10;
+            position: absolute; top: -10px; left: -10px; width: 30px; height: 30px;
+            background: white; border: 3px solid black; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 10;
         }
-        .select-box input { display: none; }
         .select-box::after { content: '★'; color: var(--ak-gold); font-size: 24px; display: none; -webkit-text-stroke: 1px black; }
         .select-box.checked { background: var(--ak-blue); }
         .select-box.checked::after { display: block; }
 
         .single-dl-btn {
-            position: absolute;
-            bottom: -15px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80%;
-            background: var(--ak-blue);
-            color: white;
-            border: 2px solid black;
-            font-weight: bold;
-            padding: 5px;
-            cursor: pointer;
-            border-radius: 20px;
-            opacity: 0;
-            transition: 0.2s;
+            position: absolute; bottom: -15px; left: 50%; transform: translateX(-50%);
+            width: 80%; background: var(--ak-blue); color: white; border: 2px solid black;
+            font-weight: bold; padding: 5px; cursor: pointer; border-radius: 20px; opacity: 0; transition: 0.2s;
         }
         .comic-card:hover .single-dl-btn { opacity: 1; bottom: 5px; }
 
         /* Lightbox */
         .lightbox {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 1000;
-            align-items: center; justify-content: center; flex-direction: column;
-            /* 加入淡入動畫 */
+            background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; flex-direction: column;
             animation: fadeIn 0.2s ease-out;
         }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
         .lightbox img {
             max-width: 90vw; max-height: 80vh; border: 5px solid white;
-            box-shadow: 0 0 30px var(--ak-gold);
-            /* 圖片加入彈出動畫 */
-            animation: zoomIn 0.3s ease-out;
+            box-shadow: 0 0 30px var(--ak-gold); animation: zoomIn 0.3s ease-out;
         }
         @keyframes zoomIn { from { transform: scale(0.8); } to { transform: scale(1); } }
-
         .close-lb {
-            position: absolute; top: 20px; right: 20px;
-            background: var(--ak-red); color: white; border: 3px solid white;
-            width: 50px; height: 50px; border-radius: 50%;
-            font-size: 30px; text-align: center; line-height: 45px; cursor: pointer;
-            transition: transform 0.2s;
+            position: absolute; top: 20px; right: 20px; background: var(--ak-red); color: white;
+            border: 3px solid white; width: 50px; height: 50px; border-radius: 50%;
+            font-size: 30px; text-align: center; line-height: 45px; cursor: pointer; transition: transform 0.2s;
         }
         .close-lb:hover { transform: scale(1.1) rotate(90deg); }
-        
-        .loading-text {
-            text-align: center; font-weight: bold; font-size: 1.2rem; margin-top: 10px; color: var(--ak-blue);
-        }
-        
+
         /* RWD */
         @media (max-width: 600px) {
-            .header-badge { padding: 10px 20px; }
-            h1 { font-size: 1.8rem; }
-            .controls-panel { justify-content: center; }
-            .mini-btn { width: 100%; }
+            .header-badge { padding: 10px 20px; } h1 { font-size: 1.8rem; }
+            .comic-container { padding: 20px; }
         }
     </style>
 </head>
@@ -365,17 +171,17 @@
     
     <div class="header-section">
         <div class="header-badge">
-            <h1>⚡ 動感超人 PDF 變身器</h1>
+            <h1>⚡ 動感超人 PDF 變身總部</h1>
         </div>
         <br>
-        <div class="subtitle">哇哈哈哈！把 PDF 變成動感圖片！</div>
+        <div class="subtitle">把 PDF 變成圖片卡片，還能組合成 PPT！</div>
     </div>
 
     <div class="belt-upload-area">
         <label for="pdfInput" style="display: block;">
             <div class="belt-inner" id="dropZone">
                 <div class="belt-buckle">A</div>
-                <div class="upload-text">點擊這裡放入文件 (PDF)</div>
+                <div class="upload-text">點擊這裡放入機密文件 (PDF)</div>
                 <div id="fileName"></div>
             </div>
         </label>
@@ -390,12 +196,25 @@
     <div id="loadingText" class="loading-text" style="display:none;"></div>
 
     <div id="resultArea" style="display: none; margin-top: 40px;">
+        
         <div class="controls-panel">
-            <span style="font-size: 1.2rem; font-weight: 900;">🔥 變身完成！共 <span id="countSpan">0</span> 張</span>
-            <div>
-                <button id="btnSelectAll" class="mini-btn btn-yellow">全選/取消</button>
-                <button id="btnDlSelected" class="mini-btn btn-green" disabled>下載選取的卡片</button>
-                <button id="btnDlAll" class="mini-btn btn-red">一鍵全部打包</button>
+            <div class="controls-header">🔥 變身完成！共 <span id="countSpan">0</span> 張卡片</div>
+            
+            <div style="margin-bottom: 20px; text-align: center;">
+                <button id="btnSelectAll" class="mini-btn btn-yellow" style="width: auto; padding: 10px 30px;">★ 全選 / 取消全選 ★</button>
+            </div>
+
+            <div class="download-groups">
+                <div class="dl-group">
+                    <div class="dl-group-title">📦 圖片懶人包 (ZIP)</div>
+                    <button id="btnDlSelectedZip" class="mini-btn btn-green" disabled>下載選取的圖片包</button>
+                    <button id="btnDlAllZip" class="mini-btn btn-red">一鍵下載全部圖片包</button>
+                </div>
+                <div class="dl-group" style="border-color: var(--ak-purple);">
+                    <div class="dl-group-title" style="color: white;">📊 動感簡報 (PPTX)</div>
+                    <button id="btnDlSelectedPpt" class="mini-btn btn-purple" disabled>選取的圖片轉 PPT</button>
+                    <button id="btnDlAllPpt" class="mini-btn btn-purple">全部圖片轉 PPT</button>
+                </div>
             </div>
         </div>
 
@@ -425,11 +244,15 @@
     
     // 按鈕群
     const btnSelectAll = document.getElementById('btnSelectAll');
-    const btnDlSelected = document.getElementById('btnDlSelected');
-    const btnDlAll = document.getElementById('btnDlAll');
+    const btnDlSelectedZip = document.getElementById('btnDlSelectedZip');
+    const btnDlAllZip = document.getElementById('btnDlAllZip');
+    // 新增 PPT 按鈕
+    const btnDlSelectedPpt = document.getElementById('btnDlSelectedPpt');
+    const btnDlAllPpt = document.getElementById('btnDlAllPpt');
 
     let selectedFile = null;
-    let imagesData = []; // 存 { id, blob, url, fileName, selected }
+    // 資料結構增加 base64 欄位
+    let imagesData = []; // 存 { id, blob, base64, url, fileName, selected }
 
     // 輔助函式：取得不含副檔名的檔名
     function getBaseFileName() {
@@ -440,7 +263,19 @@
     }
 
     // 1. 檔案監聽
-    pdfInput.addEventListener('change', (e) => {
+    pdfInput.addEventListener('change', handleFileSelect);
+    const dropZone = document.getElementById('dropZone');
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.background = '#FFF8DC'; });
+    dropZone.addEventListener('dragleave', (e) => { e.preventDefault(); dropZone.style.background = '#fff'; });
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault(); dropZone.style.background = '#fff';
+        if (e.dataTransfer.files[0]?.type === "application/pdf") {
+            pdfInput.files = e.dataTransfer.files;
+            handleFileSelect({ target: pdfInput });
+        }
+    });
+
+    function handleFileSelect(e) {
         if (e.target.files[0]) {
             selectedFile = e.target.files[0];
             fileNameDisplay.textContent = `📜 ${selectedFile.name}`;
@@ -450,29 +285,9 @@
             cardGrid.innerHTML = '';
             imagesData = [];
         }
-    });
+    }
 
-    // 拖曳支援
-    const dropZone = document.getElementById('dropZone');
-    dropZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        dropZone.style.background = '#FFF8DC';
-    });
-    dropZone.addEventListener('dragleave', (e) => {
-        e.preventDefault();
-        dropZone.style.background = '#fff';
-    });
-    dropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropZone.style.background = '#fff';
-        if (e.dataTransfer.files[0] && e.dataTransfer.files[0].type === "application/pdf") {
-            pdfInput.files = e.dataTransfer.files;
-            const event = new Event('change');
-            pdfInput.dispatchEvent(event);
-        }
-    });
-
-    // 2. 轉換邏輯
+    // 2. 轉換邏輯 (核心修改處)
     convertBtn.addEventListener('click', async () => {
         if (!selectedFile) return;
 
@@ -495,6 +310,7 @@
                 loadingText.textContent = `正在發射第 ${i} 波光波... (${i}/${total})`;
 
                 const page = await pdf.getPage(i);
+                // Scale 2 代表 200% 解析度，適合簡報與螢幕觀看
                 const scale = 2; 
                 const viewport = page.getViewport({ scale: scale });
                 
@@ -505,14 +321,20 @@
 
                 await page.render({ canvasContext: ctx, viewport: viewport }).promise;
 
+                // --- 關鍵修改：同時取得 Blob 和 Base64 ---
+                // 1. 取得 Blob (給 ZIP 下載和 ObjectURL 顯示用)
                 const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
                 const url = URL.createObjectURL(blob);
+                
+                // 2. 取得 Base64 Data URL (給 PptxGenJS 用，這樣比較穩定)
+                const base64 = canvas.toDataURL('image/png');
                 
                 const singleFileName = `${baseName}_page_${String(i).padStart(2, '0')}.png`;
 
                 imagesData.push({
                     id: i,
                     blob: blob,
+                    base64: base64, // 新增儲存 Base64
                     url: url,
                     fileName: singleFileName,
                     selected: false
@@ -568,19 +390,21 @@
 
     function updateBtnState() {
         const count = imagesData.filter(i => i.selected).length;
-        btnDlSelected.disabled = count === 0;
-        btnDlSelected.textContent = count > 0 ? `下載選取的 ${count} 張` : "下載選取的卡片";
+        // 更新 ZIP 按鈕
+        btnDlSelectedZip.disabled = count === 0;
+        btnDlSelectedZip.textContent = count > 0 ? `下載選取的 ${count} 張圖片包` : "下載選取的圖片包";
+        // 更新 PPT 按鈕
+        btnDlSelectedPpt.disabled = count === 0;
+        btnDlSelectedPpt.textContent = count > 0 ? `將選取的 ${count} 張轉 PPT` : "選取的圖片轉 PPT";
     }
 
     btnSelectAll.addEventListener('click', () => {
         const allCurrentlySelected = imagesData.length > 0 && imagesData.every(img => img.selected);
         const targetStatus = !allCurrentlySelected;
-
         const boxes = document.querySelectorAll('.select-box');
         imagesData.forEach((img, idx) => {
             img.selected = targetStatus;
-            if(targetStatus) boxes[idx].classList.add('checked');
-            else boxes[idx].classList.remove('checked');
+            targetStatus ? boxes[idx].classList.add('checked') : boxes[idx].classList.remove('checked');
         });
         updateBtnState();
     });
@@ -589,93 +413,95 @@
         const a = document.createElement('a');
         a.href = imagesData[index].url;
         a.download = imagesData[index].fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
     };
 
+    // --- 下載功能實作 ---
+
+    // 通用按鈕鎖定/解鎖
+    function setButtonsDisabled(disabled, processingText = "") {
+        const btns = [btnDlSelectedZip, btnDlAllZip, btnDlSelectedPpt, btnDlAllPpt];
+        btns.forEach(btn => {
+            if (disabled) {
+                btn.dataset.originalText = btn.textContent; // 暫存原始文字
+                btn.textContent = processingText;
+                btn.disabled = true;
+            } else {
+                btn.textContent = btn.dataset.originalText; // 恢復原始文字
+                btn.disabled = false;
+            }
+        });
+        if (!disabled) updateBtnState(); // 重新檢查選取狀態
+    }
+
+    // A. 下載 ZIP 邏輯
     async function downloadZip(targetImages) {
         if(targetImages.length === 0) return;
-
-        const originalTextSelected = btnDlSelected.textContent;
-        const originalTextAll = btnDlAll.textContent;
-        btnDlSelected.textContent = "📦 打包中...";
-        btnDlAll.textContent = "📦 打包中...";
-        btnDlSelected.disabled = true;
-        btnDlAll.disabled = true;
-
+        setButtonsDisabled(true, "📦 打包圖片中...");
         try {
             const zip = new JSZip();
-            targetImages.forEach(img => {
-                zip.file(img.fileName, img.blob);
-            });
+            targetImages.forEach(img => { zip.file(img.fileName, img.blob); });
             const content = await zip.generateAsync({type:"blob"});
             const a = document.createElement('a');
             a.href = URL.createObjectURL(content);
-            
-            const baseName = getBaseFileName();
-            a.download = `${baseName}_${Date.now()}.zip`;
-            
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            a.download = `${getBaseFileName()}_圖片包_${Date.now()}.zip`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
             URL.revokeObjectURL(a.href);
-        } catch (e) {
-            alert("打包失敗：" + e);
-        } finally {
-             btnDlSelected.textContent = originalTextSelected;
-             btnDlAll.textContent = originalTextAll;
-             updateBtnState();
-             btnDlAll.disabled = false;
-        }
+        } catch (e) { alert("圖片打包失敗：" + e); } 
+        finally { setButtonsDisabled(false); }
     }
 
-    btnDlAll.addEventListener('click', () => {
-        downloadZip(imagesData);
-    });
+    // B. 下載 PPT 邏輯 (新增功能)
+    async function downloadPpt(targetImages) {
+        if(targetImages.length === 0) return;
+        
+        // 檢查 PptxGenJS 是否載入成功
+        if (typeof PptxGenJS === 'undefined') {
+             alert("動感光波能量不足！(PptxGenJS 函式庫未載入，請檢查網路)");
+             return;
+        }
 
-    btnDlSelected.addEventListener('click', () => {
-        const targets = imagesData.filter(i => i.selected);
-        downloadZip(targets);
-    });
+        setButtonsDisabled(true, "📊 製作簡報中...");
+        try {
+            let pptx = new PptxGenJS();
+            pptx.title = getBaseFileName();
+            pptx.layout = 'LAYOUT_16x9'; // 設定為寬螢幕
 
-    // --- Lightbox 相關功能 ---
+            // 逐一將圖片加入投影片
+            targetImages.forEach(img => {
+                let slide = pptx.addSlide();
+                slide.addImage({
+                    data: img.base64, // 使用 Base64 資料
+                    x: 0, y: 0, w: '100%', h: '100%',
+                    sizing: { type: 'contain', align: 'center' }
+                });
+            });
+
+            const fileName = `${getBaseFileName()}_簡報_${Date.now()}.pptx`;
+            await pptx.writeFile({ fileName: fileName });
+
+        } catch (e) { console.error(e); alert("簡報製作失敗：" + e.message); }
+        finally { setButtonsDisabled(false); }
+    }
+
+    // 按鈕事件綁定
+    btnDlAllZip.addEventListener('click', () => downloadZip(imagesData));
+    btnDlSelectedZip.addEventListener('click', () => downloadZip(imagesData.filter(i => i.selected)));
+    
+    btnDlAllPpt.addEventListener('click', () => downloadPpt(imagesData));
+    btnDlSelectedPpt.addEventListener('click', () => downloadPpt(imagesData.filter(i => i.selected)));
+
+
+    // Lightbox
     const lightbox = document.getElementById('lightbox');
-
-    // 開啟燈箱
     window.openLightbox = (index) => {
         document.getElementById('lbImg').src = imagesData[index].url;
         document.getElementById('lbText').textContent = `PAGE ${imagesData[index].id}`;
-        lightbox.style.display = 'flex';
-        // 禁止背景滾動
-        document.body.style.overflow = 'hidden';
+        lightbox.style.display = 'flex'; document.body.style.overflow = 'hidden';
     };
-
-    // 關閉燈箱函式
-    window.closeLightbox = () => {
-        lightbox.style.display = 'none';
-        // 恢復背景滾動
-        document.body.style.overflow = 'auto';
-    };
-
-    // 1. 點擊背景關閉 (既有功能)
-    lightbox.addEventListener('click', (e) => {
-        // 確保點擊的是背景本身 (lightbox div)，而不是圖片或文字
-        if(e.target === lightbox) {
-            closeLightbox();
-        }
-    });
-
-    // 2. 新增功能：按 ESC 鍵關閉
-    document.addEventListener('keydown', (e) => {
-        // 偵測 Escape 鍵
-        if (e.key === "Escape" || e.key === "Esc") {
-            // 只有在燈箱顯示時才執行關閉動作
-            if (lightbox.style.display === 'flex') {
-                closeLightbox();
-            }
-        }
-    });
+    window.closeLightbox = () => { lightbox.style.display = 'none'; document.body.style.overflow = 'auto'; };
+    lightbox.addEventListener('click', (e) => { if(e.target === lightbox) closeLightbox(); });
+    document.addEventListener('keydown', (e) => { if ((e.key === "Escape" || e.key === "Esc") && lightbox.style.display === 'flex') closeLightbox(); });
 </script>
 
 </body>
