@@ -82,13 +82,43 @@
             font-size: 1.3rem; font-weight: 900; margin-bottom: 15px; text-align: center;
             text-shadow: 2px 2px 0 var(--comic-black);
         }
+
+        /* 模式切換開關 */
+        .mode-switcher {
+            display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;
+        }
+        .mode-btn {
+            background: #ddd; border: 3px solid var(--comic-black); color: #555;
+            padding: 10px 25px; border-radius: 30px; cursor: pointer;
+            font-weight: 900; font-size: 1.1rem; transition: 0.2s;
+            position: relative; overflow: hidden;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .mode-btn input { display: none; } /* 隱藏 radio */
+        .mode-btn:hover { transform: scale(1.05); background: white; }
+        
+        /* 激活狀態 */
+        #labelZip.mode-active { 
+            background: var(--ak-green); color: white; 
+            box-shadow: 0 4px 0 rgba(0,0,0,0.3); transform: scale(1.05);
+        }
+        #labelPpt.mode-active { 
+            background: var(--ak-purple); color: white; 
+            box-shadow: 0 4px 0 rgba(0,0,0,0.3); transform: scale(1.05);
+        }
+
         .download-groups {
-            display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;
+            display: flex; flex-direction: column; align-items: center; /* 讓內容居中 */
+            gap: 20px; justify-content: center; min-height: 120px; /* 避免切換時高度跳動太大 */
         }
         .dl-group {
             background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; border: 2px solid var(--comic-black);
-            display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 250px;
+            display: flex; flex-direction: column; gap: 10px; 
+            width: 100%; max-width: 400px; /* 限制寬度讓它好看點 */
+            animation: fadeInGroup 0.3s ease-out;
         }
+        @keyframes fadeInGroup { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
         .dl-group-title { font-weight: bold; text-align: center; margin-bottom: 5px; color: var(--ak-gold); text-shadow: 1px 1px 0 black;}
 
         /* 小按鈕樣式 */
@@ -162,6 +192,8 @@
         @media (max-width: 600px) {
             .header-badge { padding: 10px 20px; } h1 { font-size: 1.8rem; }
             .comic-container { padding: 20px; }
+            .mode-switcher { gap: 10px; }
+            .mode-btn { font-size: 0.9rem; padding: 8px 15px; }
         }
     </style>
 </head>
@@ -204,14 +236,29 @@
                 <button id="btnSelectAll" class="mini-btn btn-yellow" style="width: auto; padding: 10px 30px;">★ 全選 / 取消全選 ★</button>
             </div>
 
+            <!-- 模式切換區 (新增) -->
+            <div class="mode-switcher">
+                <label class="mode-btn mode-active" id="labelZip">
+                    <input type="radio" name="exportMode" value="zip" checked onchange="switchMode('zip')">
+                    📦 圖片懶人包 (ZIP)
+                </label>
+                <label class="mode-btn" id="labelPpt">
+                    <input type="radio" name="exportMode" value="ppt" onchange="switchMode('ppt')">
+                    📊 動感簡報 (PPTX)
+                </label>
+            </div>
+
             <div class="download-groups">
-                <div class="dl-group">
-                    <div class="dl-group-title">📦 圖片懶人包 (ZIP)</div>
+                <!-- ZIP 群組 -->
+                <div id="group-zip" class="dl-group">
+                    <div class="dl-group-title">打包成圖片 (ZIP)</div>
                     <button id="btnDlSelectedZip" class="mini-btn btn-green" disabled>下載選取的圖片包</button>
                     <button id="btnDlAllZip" class="mini-btn btn-red">一鍵下載全部圖片包</button>
                 </div>
-                <div class="dl-group" style="border-color: var(--ak-purple);">
-                    <div class="dl-group-title" style="color: white;">📊 動感簡報 (PPTX)</div>
+
+                <!-- PPT 群組 (預設隱藏) -->
+                <div id="group-ppt" class="dl-group" style="display:none; border-color: var(--ak-purple);">
+                    <div class="dl-group-title" style="color: white;">打包成簡報 (PPTX)</div>
                     <button id="btnDlSelectedPpt" class="mini-btn btn-purple" disabled>選取的圖片轉 PPT</button>
                     <button id="btnDlAllPpt" class="mini-btn btn-purple">全部圖片轉 PPT</button>
                 </div>
@@ -246,13 +293,11 @@
     const btnSelectAll = document.getElementById('btnSelectAll');
     const btnDlSelectedZip = document.getElementById('btnDlSelectedZip');
     const btnDlAllZip = document.getElementById('btnDlAllZip');
-    // 新增 PPT 按鈕
     const btnDlSelectedPpt = document.getElementById('btnDlSelectedPpt');
     const btnDlAllPpt = document.getElementById('btnDlAllPpt');
 
     let selectedFile = null;
-    // 資料結構增加 base64 欄位
-    let imagesData = []; // 存 { id, blob, base64, url, fileName, selected }
+    let imagesData = []; 
 
     // 輔助函式：取得不含副檔名的檔名
     function getBaseFileName() {
@@ -261,6 +306,25 @@
         if (lastDotIndex === -1) return selectedFile.name; 
         return selectedFile.name.substring(0, lastDotIndex);
     }
+
+    // --- 新增：切換模式邏輯 ---
+    window.switchMode = (mode) => {
+        // 切換按鈕外觀
+        document.getElementById('labelZip').classList.toggle('mode-active', mode === 'zip');
+        document.getElementById('labelPpt').classList.toggle('mode-active', mode === 'ppt');
+
+        // 切換顯示區塊
+        const groupZip = document.getElementById('group-zip');
+        const groupPpt = document.getElementById('group-ppt');
+
+        if (mode === 'zip') {
+            groupZip.style.display = 'flex';
+            groupPpt.style.display = 'none';
+        } else {
+            groupZip.style.display = 'none';
+            groupPpt.style.display = 'flex';
+        }
+    };
 
     // 1. 檔案監聽
     pdfInput.addEventListener('change', handleFileSelect);
@@ -287,7 +351,7 @@
         }
     }
 
-    // 2. 轉換邏輯 (核心修改處)
+    // 2. 轉換邏輯
     convertBtn.addEventListener('click', async () => {
         if (!selectedFile) return;
 
@@ -310,7 +374,7 @@
                 loadingText.textContent = `正在發射第 ${i} 波光波... (${i}/${total})`;
 
                 const page = await pdf.getPage(i);
-                // Scale 2 代表 200% 解析度，適合簡報與螢幕觀看
+                // Scale 2 代表 200% 解析度
                 const scale = 2; 
                 const viewport = page.getViewport({ scale: scale });
                 
@@ -321,12 +385,11 @@
 
                 await page.render({ canvasContext: ctx, viewport: viewport }).promise;
 
-                // --- 關鍵修改：同時取得 Blob 和 Base64 ---
-                // 1. 取得 Blob (給 ZIP 下載和 ObjectURL 顯示用)
+                // 1. 取得 Blob
                 const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
                 const url = URL.createObjectURL(blob);
                 
-                // 2. 取得 Base64 Data URL (給 PptxGenJS 用，這樣比較穩定)
+                // 2. 取得 Base64
                 const base64 = canvas.toDataURL('image/png');
                 
                 const singleFileName = `${baseName}_page_${String(i).padStart(2, '0')}.png`;
@@ -334,7 +397,7 @@
                 imagesData.push({
                     id: i,
                     blob: blob,
-                    base64: base64, // 新增儲存 Base64
+                    base64: base64, 
                     url: url,
                     fileName: singleFileName,
                     selected: false
@@ -379,6 +442,9 @@
             cardGrid.appendChild(div);
         });
         updateBtnState();
+        
+        // 渲染後確保介面狀態正確 (預設 ZIP)
+        switchMode('zip');
     }
 
     // 4. 互動功能
@@ -423,18 +489,18 @@
         const btns = [btnDlSelectedZip, btnDlAllZip, btnDlSelectedPpt, btnDlAllPpt];
         btns.forEach(btn => {
             if (disabled) {
-                btn.dataset.originalText = btn.textContent; // 暫存原始文字
+                btn.dataset.originalText = btn.textContent; 
                 btn.textContent = processingText;
                 btn.disabled = true;
             } else {
-                btn.textContent = btn.dataset.originalText; // 恢復原始文字
+                btn.textContent = btn.dataset.originalText; 
                 btn.disabled = false;
             }
         });
-        if (!disabled) updateBtnState(); // 重新檢查選取狀態
+        if (!disabled) updateBtnState(); 
     }
 
-    // A. 下載 ZIP 邏輯
+    // A. 下載 ZIP
     async function downloadZip(targetImages) {
         if(targetImages.length === 0) return;
         setButtonsDisabled(true, "📦 打包圖片中...");
@@ -451,11 +517,10 @@
         finally { setButtonsDisabled(false); }
     }
 
-    // B. 下載 PPT 邏輯 (新增功能)
+    // B. 下載 PPT
     async function downloadPpt(targetImages) {
         if(targetImages.length === 0) return;
         
-        // 檢查 PptxGenJS 是否載入成功
         if (typeof PptxGenJS === 'undefined') {
              alert("動感光波能量不足！(PptxGenJS 函式庫未載入，請檢查網路)");
              return;
@@ -465,13 +530,12 @@
         try {
             let pptx = new PptxGenJS();
             pptx.title = getBaseFileName();
-            pptx.layout = 'LAYOUT_16x9'; // 設定為寬螢幕
+            pptx.layout = 'LAYOUT_16x9'; 
 
-            // 逐一將圖片加入投影片
             targetImages.forEach(img => {
                 let slide = pptx.addSlide();
                 slide.addImage({
-                    data: img.base64, // 使用 Base64 資料
+                    data: img.base64, 
                     x: 0, y: 0, w: '100%', h: '100%',
                     sizing: { type: 'contain', align: 'center' }
                 });
@@ -484,13 +548,11 @@
         finally { setButtonsDisabled(false); }
     }
 
-    // 按鈕事件綁定
     btnDlAllZip.addEventListener('click', () => downloadZip(imagesData));
     btnDlSelectedZip.addEventListener('click', () => downloadZip(imagesData.filter(i => i.selected)));
     
     btnDlAllPpt.addEventListener('click', () => downloadPpt(imagesData));
     btnDlSelectedPpt.addEventListener('click', () => downloadPpt(imagesData.filter(i => i.selected)));
-
 
     // Lightbox
     const lightbox = document.getElementById('lightbox');
