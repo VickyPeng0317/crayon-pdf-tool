@@ -324,17 +324,27 @@
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.9); z-index: 1000;
             align-items: center; justify-content: center; flex-direction: column;
+            /* 加入淡入動畫 */
+            animation: fadeIn 0.2s ease-out;
         }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
         .lightbox img {
             max-width: 90vw; max-height: 80vh; border: 5px solid white;
             box-shadow: 0 0 30px var(--ak-gold);
+            /* 圖片加入彈出動畫 */
+            animation: zoomIn 0.3s ease-out;
         }
+        @keyframes zoomIn { from { transform: scale(0.8); } to { transform: scale(1); } }
+
         .close-lb {
             position: absolute; top: 20px; right: 20px;
             background: var(--ak-red); color: white; border: 3px solid white;
             width: 50px; height: 50px; border-radius: 50%;
             font-size: 30px; text-align: center; line-height: 45px; cursor: pointer;
+            transition: transform 0.2s;
         }
+        .close-lb:hover { transform: scale(1.1) rotate(90deg); }
         
         .loading-text {
             text-align: center; font-weight: bold; font-size: 1.2rem; margin-top: 10px; color: var(--ak-blue);
@@ -421,6 +431,14 @@
     let selectedFile = null;
     let imagesData = []; // 存 { id, blob, url, fileName, selected }
 
+    // 輔助函式：取得不含副檔名的檔名
+    function getBaseFileName() {
+        if (!selectedFile) return "動感光波檔案";
+        const lastDotIndex = selectedFile.name.lastIndexOf('.');
+        if (lastDotIndex === -1) return selectedFile.name; 
+        return selectedFile.name.substring(0, lastDotIndex);
+    }
+
     // 1. 檔案監聽
     pdfInput.addEventListener('change', (e) => {
         if (e.target.files[0]) {
@@ -428,7 +446,6 @@
             fileNameDisplay.textContent = `📜 ${selectedFile.name}`;
             convertBtn.disabled = false;
             convertBtn.textContent = "動感光波！發射！ (開始轉換)";
-            // 重置 UI
             resultArea.style.display = 'none';
             cardGrid.innerHTML = '';
             imagesData = [];
@@ -450,7 +467,6 @@
         dropZone.style.background = '#fff';
         if (e.dataTransfer.files[0] && e.dataTransfer.files[0].type === "application/pdf") {
             pdfInput.files = e.dataTransfer.files;
-            // 手動觸發 change 事件
             const event = new Event('change');
             pdfInput.dispatchEvent(event);
         }
@@ -465,20 +481,21 @@
         powerMeter.style.display = 'block';
         loadingText.style.display = 'block';
         resultArea.style.display = 'none';
+        imagesData = []; 
 
         try {
             const buffer = await selectedFile.arrayBuffer();
             const pdf = await pdfjsLib.getDocument(buffer).promise;
             const total = pdf.numPages;
+            const baseName = getBaseFileName(); 
 
             for (let i = 1; i <= total; i++) {
-                // 更新進度條
                 const percent = Math.round((i / total) * 100);
                 powerFill.style.width = `${percent}%`;
                 loadingText.textContent = `正在發射第 ${i} 波光波... (${i}/${total})`;
 
                 const page = await pdf.getPage(i);
-                const scale = 2; // 高畫質
+                const scale = 2; 
                 const viewport = page.getViewport({ scale: scale });
                 
                 const canvas = document.createElement('canvas');
@@ -491,11 +508,13 @@
                 const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
                 const url = URL.createObjectURL(blob);
                 
+                const singleFileName = `${baseName}_page_${String(i).padStart(2, '0')}.png`;
+
                 imagesData.push({
                     id: i,
                     blob: blob,
                     url: url,
-                    fileName: `action_kamen_page_${i}.png`,
+                    fileName: singleFileName,
                     selected: false
                 });
             }
@@ -510,8 +529,11 @@
             }, 800);
 
         } catch (err) {
-            alert("哎呀！怪獸太強了 (轉換失敗)：" + err.message);
+            console.error(err);
+            alert("哎呀！怪獸太強了 (轉換失敗，請檢查檔案)");
             convertBtn.disabled = false;
+            powerMeter.style.display = 'none';
+            loadingText.style.display = 'none';
         }
     });
 
@@ -525,7 +547,7 @@
             const div = document.createElement('div');
             div.className = 'comic-card';
             div.innerHTML = `
-                <div class="select-box" onclick="toggleSelect(${index}, this)"></div>
+                <div class="select-box ${img.selected ? 'checked' : ''}" onclick="toggleSelect(${index}, this)"></div>
                 <div class="card-image-box" onclick="openLightbox(${index})">
                     <img src="${img.url}">
                 </div>
@@ -550,58 +572,110 @@
         btnDlSelected.textContent = count > 0 ? `下載選取的 ${count} 張` : "下載選取的卡片";
     }
 
-    // 全選
-    let isAll = false;
     btnSelectAll.addEventListener('click', () => {
-        isAll = !isAll;
+        const allCurrentlySelected = imagesData.length > 0 && imagesData.every(img => img.selected);
+        const targetStatus = !allCurrentlySelected;
+
         const boxes = document.querySelectorAll('.select-box');
         imagesData.forEach((img, idx) => {
-            img.selected = isAll;
-            if(isAll) boxes[idx].classList.add('checked');
+            img.selected = targetStatus;
+            if(targetStatus) boxes[idx].classList.add('checked');
             else boxes[idx].classList.remove('checked');
         });
         updateBtnState();
     });
 
-    // 單張下載
     window.downloadSingle = (index) => {
         const a = document.createElement('a');
         a.href = imagesData[index].url;
         a.download = imagesData[index].fileName;
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
     };
 
-    // 批次下載
-    async function downloadZip(targetImages, zipName) {
-        const zip = new JSZip();
-        targetImages.forEach(img => {
-            zip.file(img.fileName, img.blob);
-        });
-        const content = await zip.generateAsync({type:"blob"});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(content);
-        a.download = zipName;
-        a.click();
+    async function downloadZip(targetImages) {
+        if(targetImages.length === 0) return;
+
+        const originalTextSelected = btnDlSelected.textContent;
+        const originalTextAll = btnDlAll.textContent;
+        btnDlSelected.textContent = "📦 打包中...";
+        btnDlAll.textContent = "📦 打包中...";
+        btnDlSelected.disabled = true;
+        btnDlAll.disabled = true;
+
+        try {
+            const zip = new JSZip();
+            targetImages.forEach(img => {
+                zip.file(img.fileName, img.blob);
+            });
+            const content = await zip.generateAsync({type:"blob"});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(content);
+            
+            const baseName = getBaseFileName();
+            a.download = `${baseName}_${Date.now()}.zip`;
+            
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(a.href);
+        } catch (e) {
+            alert("打包失敗：" + e);
+        } finally {
+             btnDlSelected.textContent = originalTextSelected;
+             btnDlAll.textContent = originalTextAll;
+             updateBtnState();
+             btnDlAll.disabled = false;
+        }
     }
 
     btnDlAll.addEventListener('click', () => {
-        downloadZip(imagesData, `動感超人全集_${Date.now()}.zip`);
+        downloadZip(imagesData);
     });
 
     btnDlSelected.addEventListener('click', () => {
         const targets = imagesData.filter(i => i.selected);
-        downloadZip(targets, `動感超人精選_${Date.now()}.zip`);
+        downloadZip(targets);
     });
 
-    // Lightbox
+    // --- Lightbox 相關功能 ---
+    const lightbox = document.getElementById('lightbox');
+
+    // 開啟燈箱
     window.openLightbox = (index) => {
         document.getElementById('lbImg').src = imagesData[index].url;
         document.getElementById('lbText').textContent = `PAGE ${imagesData[index].id}`;
-        document.getElementById('lightbox').style.display = 'flex';
+        lightbox.style.display = 'flex';
+        // 禁止背景滾動
+        document.body.style.overflow = 'hidden';
     };
+
+    // 關閉燈箱函式
     window.closeLightbox = () => {
-        document.getElementById('lightbox').style.display = 'none';
+        lightbox.style.display = 'none';
+        // 恢復背景滾動
+        document.body.style.overflow = 'auto';
     };
+
+    // 1. 點擊背景關閉 (既有功能)
+    lightbox.addEventListener('click', (e) => {
+        // 確保點擊的是背景本身 (lightbox div)，而不是圖片或文字
+        if(e.target === lightbox) {
+            closeLightbox();
+        }
+    });
+
+    // 2. 新增功能：按 ESC 鍵關閉
+    document.addEventListener('keydown', (e) => {
+        // 偵測 Escape 鍵
+        if (e.key === "Escape" || e.key === "Esc") {
+            // 只有在燈箱顯示時才執行關閉動作
+            if (lightbox.style.display === 'flex') {
+                closeLightbox();
+            }
+        }
+    });
 </script>
 
 </body>
