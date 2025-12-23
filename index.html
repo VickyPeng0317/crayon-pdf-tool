@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>動感超人 PDF 變身總部 (去水印加強版)</title>
+    <title>動感超人 PDF 變身總部</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.min.js"></script>
@@ -612,10 +612,12 @@
                 }
                 // --------------------
 
-                const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+                // 優化：改用 JPEG 格式並設定 0.8 品質，大幅減少檔案大小
+                const quality = 0.8;
+                const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', quality));
                 const url = URL.createObjectURL(blob);
-                const base64 = canvas.toDataURL('image/png');
-                const singleFileName = `${baseName}_page_${String(i).padStart(2, '0')}.png`;
+                const base64 = canvas.toDataURL('image/jpeg', quality);
+                const singleFileName = `${baseName}_page_${String(i).padStart(2, '0')}.jpg`;
 
                 imagesData.push({
                     id: i,
