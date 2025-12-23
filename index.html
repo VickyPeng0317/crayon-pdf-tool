@@ -83,6 +83,22 @@
         }
         .toggle-btn.active { background: var(--ak-green); color: white; border-color: var(--comic-black); box-shadow: 2px 2px 0 rgba(0,0,0,0.2); }
 
+        /* 新增：格式選擇區 CSS */
+        .format-section {
+            display: flex; justify-content: center; gap: 20px; margin-top: 15px;
+            background: #fff; padding: 15px; border: 3px solid var(--comic-black); border-radius: 15px;
+            box-shadow: 5px 5px 0 rgba(0,0,0,0.1);
+        }
+        .format-option {
+            cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: bold; font-size: 1rem;
+            padding: 8px 15px; border-radius: 8px; border: 2px solid transparent; transition: 0.2s;
+        }
+        .format-option:hover { background: #eee; }
+        .format-option input[type="radio"] { accent-color: var(--ak-blue); transform: scale(1.2); }
+        .format-tag { font-size: 0.8rem; padding: 2px 6px; border-radius: 4px; color: white; margin-left: 5px;}
+        .tag-fast { background: var(--ak-green); }
+        .tag-hq { background: var(--ak-red); }
+
         /* 主操作按鈕 */
         .action-btn {
             background: var(--ak-blue); color: white; font-size: 1.5rem; font-weight: 900;
@@ -225,6 +241,7 @@
             .mode-switcher { gap: 10px; }
             .mode-btn { font-size: 0.9rem; padding: 8px 15px; }
             .eraser-content { flex-direction: column; }
+            .format-section { flex-direction: column; gap: 10px; align-items: flex-start; }
         }
     </style>
 </head>
@@ -303,6 +320,23 @@
         </div>
     </div>
 
+    <!-- 新增：格式選擇區 -->
+    <div class="format-section" id="formatSection" style="display:none;">
+        <span style="font-weight:bold; font-size:1.1rem; color:var(--ak-blue); display:flex; align-items:center;">⚡ 變身型態：</span>
+        
+        <label class="format-option">
+            <input type="radio" name="imgFormat" value="jpeg" checked>
+            <span>敏捷型 (JPG)</span>
+            <span class="format-tag tag-fast">檔案小</span>
+        </label>
+        
+        <label class="format-option">
+            <input type="radio" name="imgFormat" value="png">
+            <span>強力型 (PNG)</span>
+            <span class="format-tag tag-hq">畫質好</span>
+        </label>
+    </div>
+
     <button id="convertBtn" class="action-btn" disabled>動感光波！發射！ (請先選檔案)</button>
 
     <div class="power-meter" id="powerMeter">
@@ -372,6 +406,7 @@
     const resultArea = document.getElementById('resultArea');
     const cardGrid = document.getElementById('cardGrid');
     const eraserPanel = document.getElementById('eraserPanel');
+    const formatSection = document.getElementById('formatSection'); // 新增
     const previewCanvas = document.getElementById('previewCanvas');
     
     // 浮水印控制項
@@ -538,6 +573,7 @@
             // 載入預覽
             await loadPreviewFirstPage();
             eraserPanel.style.display = 'block'; // 顯示設定面板
+            formatSection.style.display = 'flex'; // 顯示格式選擇
         }
     }
 
@@ -576,6 +612,14 @@
     convertBtn.addEventListener('click', async () => {
         if (!selectedFile) return;
 
+        // 取得使用者選擇的格式
+        const formatInput = document.querySelector('input[name="imgFormat"]:checked');
+        const targetFormat = formatInput ? formatInput.value : 'jpeg'; // 'jpeg' or 'png'
+        const isPng = targetFormat === 'png';
+        const mimeType = isPng ? 'image/png' : 'image/jpeg';
+        const quality = isPng ? undefined : 0.8; // PNG 不需要 quality 參數
+        const ext = isPng ? 'png' : 'jpg';
+
         convertBtn.disabled = true;
         convertBtn.textContent = "⚡ 能量填充中... ⚡";
         powerMeter.style.display = 'block';
@@ -612,12 +656,11 @@
                 }
                 // --------------------
 
-                // 優化：改用 JPEG 格式並設定 0.8 品質，大幅減少檔案大小
-                const quality = 0.8;
-                const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', quality));
+                // 根據格式輸出 Blob 與 Base64
+                const blob = await new Promise(r => canvas.toBlob(r, mimeType, quality));
                 const url = URL.createObjectURL(blob);
-                const base64 = canvas.toDataURL('image/jpeg', quality);
-                const singleFileName = `${baseName}_page_${String(i).padStart(2, '0')}.jpg`;
+                const base64 = canvas.toDataURL(mimeType, quality);
+                const singleFileName = `${baseName}_page_${String(i).padStart(2, '0')}.${ext}`;
 
                 imagesData.push({
                     id: i,
